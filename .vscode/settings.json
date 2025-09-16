@@ -1,0 +1,5 @@
+{
+    "C_Cpp.default.configurationProvider": "ms-vscode.cmake-tools",
+    "qtConfigure.qtKitDir": "D:\\Program Files\\Qt\\6.8.2\\mingw_64\\bin",
+    "cmake.options.statusBarVisibility": "visible"
+}
