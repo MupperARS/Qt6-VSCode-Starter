@@ -13,18 +13,21 @@ qt_standard_project_setup()
 
 # add_compile_options(-std=c++19 -Wall)
 
+#判断构建类型
 if(!CMAKE_BUILD_TYPE)
     set(CMAKE_BUILD_TYPE "Release")
 endif()
 
-if(MINGW)
+#判断构建类型是否是MINGW 并且是发行优化
+if(MINGW AND CMAKE_BUILD_TYPE STREQUAL "Release")
     set(CMAKE_CXX_FLAGS "-mwindows")
-endif(MINGW)
+endif(MINGW AND CMAKE_BUILD_TYPE STREQUAL "Release")
 
 # Specify MSVC UTF-8 encoding
 add_compile_options("$<$<C_COMPILER_ID:MSVC>:/utf-8>")
 add_compile_options("$<$<CXX_COMPILER_ID:MSVC>:/utf-8>")
 
+#这里写入显式的头文件
 include_directories("src/Application")
 
 # Can manually add the sources using the set command as follows:
@@ -33,6 +36,7 @@ include_directories("src/Application")
 
 file(GLOB_RECURSE SOURCES CONFIGURE_DEPENDS "src/[^.]*.cpp")
 
+#这个是在将ui文件添加到源文件的尾部
 list(APPEND CMAKE_AUTOUIC_SEARCH_PATHS "${PROJECT_SOURCE_DIR}/ui")
 
 # set((EXECUTABLE_OUTPUT_PATH ${PROJECT_SOURCE_DIR}/build))
@@ -40,8 +44,10 @@ add_executable(${PROJECT_NAME}
     #WIN32 # If you need a terminal for debug, please comment this statement
     ${SOURCES}
 )
+#来这里写要连接的库(动态连接dll)
 target_link_libraries(${PROJECT_NAME} PRIVATE Qt6::Core Qt6::Gui Qt6::Widgets Qt6::SerialPort Vulkan::Vulkan) # Qt6 Shared Library
 
+#加载测试器
 include(CTest)
 find_package(Qt6 COMPONENTS Test REQUIRED)
 file(GLOB_RECURSE TEST_SOURCES CONFIGURE_DEPENDS "test/*.cpp")
@@ -63,6 +69,7 @@ if(TEST_SOURCES)
     # 链接测试目标
     target_link_libraries(${PROJECT_NAME}_Tests PRIVATE
         Qt6::Test
+        Qt6::Core
         Qt6::Gui
         Qt6::Widgets
         Qt6::SerialPort
@@ -72,7 +79,7 @@ endif()
 
 install(TARGETS ${PROJECT_NAME}
     # ARCHIVE DESTINATION ${PROJECT_NAME}/lib
-    RUNTIME DESTINATION .
+    RUNTIME DESTINATION bin    #位置改为bin目录内
     # PUBLIC_HEADER DESTINATION ${PROJECT_NAME}/include
 )
 
@@ -91,15 +98,19 @@ install(DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/static"
 )
 
 include(InstallRequiredSystemLibraries)
-set(CPACK_GENERATOR "NSIS")
+set(CPACK_GENERATOR "NSIS")     #NSIS安装器 可选RAR、7ZIP等
 set(CPACK_NSIS_ENABLE_UNINSTALL_BEFORE_INSTALL ON)
 set(CPACK_NSIS_MODIFY_PATH OFF)
 set(CPACK_RESOURCE_FILE_LICENSE "${CMAKE_CURRENT_SOURCE_DIR}/License.txt")
 set(CPACK_NSIS_MUI_ICON "${CMAKE_CURRENT_SOURCE_DIR}/static/icon.ico")
 set(CPACK_PACKAGE_VERSION_MAJOR "${PROJECT_VERSION_MAJOR}")
 set(CPACK_PACKAGE_VERSION_MINOR "${PROJECT_VERSION_MINOR}")
-set(CPACK_PACKAGE_EXECUTABLES "${PROJECT_NAME}" "${PROJECT_NAME}")
 set(CPACK_CREATE_DESKTOP_LINKS "${PROJECT_NAME}")
-set(CPACK_NSIS_MENU_LINKS "${PROJECT_NAME}.exe" "Launch ${PROJECT_NAME}")
+#判断是否是Windows
+if(CMAKE_SYSTEM_NAME MATCHES "Windows")
+    set(CPACK_NSIS_MENU_LINKS "${PROJECT_NAME}.exe" "Launch ${PROJECT_NAME}")
+else()
+    set(CPACK_PACKAGE_EXECUTABLES "bin/${PROJECT_NAME}" "Launch ${PROJECT_NAME}")
+endif()
 set(CPACK_PACKAGE_INSTALL_DIRECTORY "${PROJECT_NAME}")
 include(CPack)
